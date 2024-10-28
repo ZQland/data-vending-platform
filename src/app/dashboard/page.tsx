@@ -2,84 +2,51 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Link from 'next/link';
 
 export default function Dashboard() {
-  const [purchasedDatasets, setPurchasedDatasets] = useState<any[]>([]);
-  const [sellingDatasets, setSellingDatasets] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<{ id: number; name: string; description: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch purchased datasets
-  const fetchPurchasedDatasets = async () => {
+  // Fetch companies managed by the admin
+  const fetchCompanies = async () => {
     try {
-      const token = localStorage.getItem('token'); // Get JWT from localStorage
-      const response = await axios.get('/api/purchase', {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/companies', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPurchasedDatasets(response.data);
+      setCompanies(response.data);
     } catch (err) {
-      setError('Failed to fetch purchased datasets');
-    }
-  };
-
-  // Fetch selling datasets
-  const fetchSellingDatasets = async () => {
-    try {
-      const token = localStorage.getItem('token'); // Get JWT from localStorage
-      const response = await axios.get('/api/selling', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSellingDatasets(response.data);
-    } catch (err) {
-      setError('Failed to fetch selling datasets');
+      setError('Failed to fetch companies');
     }
   };
 
   useEffect(() => {
-    fetchPurchasedDatasets();
-    fetchSellingDatasets();
+    fetchCompanies();
   }, []);
 
   return (
     <div className="dashboard-container">
-      <h1>Dashboard</h1>
-      
+      <h1>Admin Dashboard</h1>
+
       {error && <p className="error">{error}</p>}
-      
-      {/* Purchased Datasets */}
+
+      {/* Companies Managed by Admin */}
       <section>
-        <h2>Purchased Datasets</h2>
-        {purchasedDatasets.length > 0 ? (
-          <div className="dataset-grid">
-            {purchasedDatasets.map((dataset, index) => (
-              <div key={index} className="dataset-card">
-                <h3>{dataset.title}</h3>
-                <p>{dataset.description}</p>
-                <p><strong>Purchased on:</strong> {new Date(dataset.purchase_date).toLocaleDateString()}</p>
-              </div>
+        <h2>Companies</h2>
+        {companies.length > 0 ? (
+          <div className="company-grid">
+            {companies.map((company) => (
+              <Link href={`/company/${company.id}`} key={company.id}>
+                <div className="company-card">
+                  <h3>{company.name}</h3>
+                  <p>{company.description}</p>
+                </div>
+              </Link>
             ))}
           </div>
         ) : (
-          <p>No datasets purchased yet.</p>
-        )}
-      </section>
-
-      <hr />
-
-      {/* Selling Datasets */}
-      <section>
-        <h2>Selling Datasets</h2>
-        {sellingDatasets.length > 0 ? (
-          <div className="dataset-grid">
-            {sellingDatasets.map((dataset, index) => (
-              <div key={index} className="dataset-card">
-                <h3>{dataset.title}</h3>
-                <p>{dataset.description}</p>
-                <p><strong>Listed on:</strong> {new Date(dataset.created_at).toLocaleDateString()}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>No datasets listed for sale yet.</p>
+          <p>No companies managed yet.</p>
         )}
       </section>
 
@@ -110,62 +77,36 @@ export default function Dashboard() {
           padding-bottom: 10px;
         }
 
-        .dataset-grid {
+        .company-grid {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
           gap: 20px;
         }
 
-        .dataset-card {
+        .company-card {
           background-color: #f9f9f9;
           padding: 20px;
           border-radius: 10px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           transition: transform 0.2s ease, box-shadow 0.2s ease;
+          cursor: pointer;
         }
 
-        .dataset-card:hover {
+        .company-card:hover {
           transform: translateY(-5px);
           box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
         }
 
-        .dataset-card h3 {
+        h3 {
           font-size: 1.5rem;
           margin-bottom: 10px;
           color: #007bff;
-        }
-
-        .dataset-card p {
-          font-size: 1rem;
-          margin-bottom: 10px;
-          color: #555;
         }
 
         .error {
           color: red;
           text-align: center;
           margin-bottom: 20px;
-        }
-
-        hr {
-          margin: 40px 0;
-          border: none;
-          height: 1px;
-          background-color: #ddd;
-        }
-
-        @media (max-width: 768px) {
-          .dataset-grid {
-            grid-template-columns: 1fr;
-          }
-
-          h1 {
-            font-size: 2rem;
-          }
-
-          h2 {
-            font-size: 1.75rem;
-          }
         }
       `}</style>
     </div>

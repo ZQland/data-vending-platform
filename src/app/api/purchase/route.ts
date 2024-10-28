@@ -26,27 +26,31 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ message: 'Error fetching purchased datasets' }, { status: 500 });
   }
 }
+
 export async function POST(req: NextRequest) {
     const token = req.headers.get('authorization')?.split(' ')[1];
-    console.log(token);
+  
     if (!token) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
   
     try {
+      // Decode the JWT to get user details (if necessary)
       const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-      const userId = (decoded as any).id; // Get the user ID from the token
+      const userId = (decoded as any).id; // Extract user ID from the token
   
-      const { datasetId } = await req.json(); // Get dataset ID from request body
+      const { datasetId, buyerId } = await req.json(); // Get datasetId and buyerId from the request body
   
-      // Insert the purchase into the purchases table
+      // Insert the purchase into the dataset_sales table
       const result = await query(
-        'INSERT INTO purchases (user_id, dataset_id) VALUES ($1, $2) RETURNING *',
-        [userId, datasetId]
+        `INSERT INTO dataset_sales (dataset_id, buyer_id) 
+         VALUES ($1, $2) RETURNING *`,
+        [datasetId, buyerId]
       );
   
       return NextResponse.json(result.rows[0], { status: 201 });
     } catch (error) {
-      return NextResponse.json({ message: 'Error processing purchase' }, { status: 500 });
+      console.error('Error processing the sale:', error);
+      return NextResponse.json({ message: 'Error processing the sale' }, { status: 500 });
     }
   }

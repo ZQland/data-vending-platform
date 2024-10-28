@@ -27,34 +27,36 @@ export async function GET(req: NextRequest) {
 }
 // Add a new dataset
 export async function POST(req: NextRequest) {
+    const token = req.headers.get('authorization')?.split(' ')[1];
+  
+    if (!token) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+  
     try {
-      // Log the Authorization header for debugging
-      const authHeader = req.headers.get('authorization');
-      console.log('Authorization header:', authHeader);
+      // Verify the token to get the user ID
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+      const userId = (decoded as any).id;  // Extract user ID from JWT
   
-      // Extract the token from the Authorization header
-      const token = authHeader?.split(' ')[1];
+      // Extract the dataset details from the request body
+      const { title, description, seller_company_name, seller_company_id } = await req.json();
   
-      if (!token) {
-        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      // Validate the inputs (Optional but recommended)
+      if (!title || !description || !seller_company_name || !seller_company_id) {
+        return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
       }
   
-      // Verify the JWT token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-      console.log('Decoded token:', decoded);
-  
-      const userId = (decoded as any).id; // Extract user ID from JWT
-      const { seller_name, title, description } = await req.json(); // Extract dataset info from request body
-  
-      // Insert dataset into the database
+      // Insert the new dataset into the datasets table
       const result = await query(
-        'INSERT INTO datasets (seller_name, title, description, seller_id) VALUES ($1, $2, $3, $4) RETURNING *',
-        [seller_name, title, description, userId]
+        `INSERT INTO datasets (title, description, seller_company_name, seller_company_id)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [title, description, seller_company_name, seller_company_id]
       );
   
-      return NextResponse.json(result.rows[0], { status: 201 }); // Return the newly created dataset
+      return NextResponse.json(result.rows[0], { status: 201 });
     } catch (error) {
-      console.error('Error processing the request:', error);
-      return NextResponse.json({ message: 'Error adding dataset for sale' }, { status: 500 });
+      console.error('Error inserting dataset:', error);
+      return NextResponse.json({ message: 'Failed to submit dataset' }, { status: 500 });
     }
   }
